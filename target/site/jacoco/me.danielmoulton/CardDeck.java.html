@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CardDeck.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">threadedcardsim</a> &gt; <a href="index.source.html" class="el_package">me.danielmoulton</a> &gt; <span class="el_source">CardDeck.java</span></div><h1>CardDeck.java</h1><pre class="source lang-java linenums">package me.danielmoulton;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
+
+/**
+ * Represents a deck of cards in the game.
+ *
+ * @author Daniel Moulton
+ * @author James Pilcher
+ */
+public class CardDeck {
+
+  // Queue of the cards in the deck (FIFO)
+<span class="fc" id="L19">  private Queue&lt;Card&gt; contents = new ConcurrentLinkedQueue&lt;Card&gt;();</span>
+  private final int deckNumber;
+  private PrintStream outputter;
+
+  /**
+   * Constructor for the CardDeck class.
+   *
+   * @param deckNumber the number of the deck
+   */
+<span class="fc" id="L28">  public CardDeck(int deckNumber) {</span>
+<span class="fc" id="L29">    contents = new LinkedList&lt;Card&gt;();</span>
+<span class="fc" id="L30">    this.deckNumber = deckNumber;</span>
+    try {
+<span class="fc" id="L32">      this.outputter = new PrintStream(new File(CardGame.gameLocation + &quot;/&quot; </span>
+<span class="fc" id="L33">        + &quot;deck&quot; + deckNumber + &quot;_output.txt&quot;));</span>
+<span class="pc" id="L34">    } catch (FileNotFoundException e) {</span>
+<span class="nc" id="L35">      e.printStackTrace();</span>
+    }
+<span class="fc" id="L37">  }</span>
+
+
+  /** 
+   * Getter for the deck number.
+   *
+   * @return the deck number
+   */
+  public int getDeckNumber() {
+<span class="fc" id="L46">    return deckNumber;</span>
+  }
+
+
+  /** 
+   * Inserts a card into the deck.
+   *
+   * @param card the card to insert
+   */
+  public void insertCard(Card card) {
+<span class="fc" id="L56">    contents.add(card);</span>
+<span class="fc" id="L57">  }</span>
+
+
+  /** 
+   * Removes the top card from the deck and returns it.
+   *
+   * @return the top card from the deck
+   */
+  public Card drawCard() {
+<span class="fc" id="L66">    return contents.remove();</span>
+  }
+
+
+  /** 
+   * Getter for the length of the deck.
+   *
+   * @return number of cards in the deck (length of deck)
+   */
+  public int getDeckLength() {
+<span class="nc" id="L76">    return contents.size();</span>
+  }
+
+
+  /** 
+   * Returns the values of the cards in the deck as a string.
+   *
+   * @return string of card values
+   */
+  public String getDeckContentsAsString() {
+<span class="fc" id="L86">    String output = &quot;&quot;;</span>
+<span class="fc bfc" id="L87" title="All 2 branches covered.">    for (Card card : contents) { </span>
+<span class="fc" id="L88">      output += card.getCardValue() + &quot; &quot;; </span>
+    }
+<span class="fc" id="L90">    return output;</span>
+  }
+
+  /**
+   * Appends the contents of the deck to the deck's output file.
+   */
+  public void printContentsToFile() {
+<span class="nc" id="L97">    String output = getDeckContentsAsString();</span>
+<span class="nc" id="L98">    outputter.println(&quot;Deck Contents: &quot; + output);</span>
+<span class="nc" id="L99">    outputter.close();</span>
+<span class="nc" id="L100">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

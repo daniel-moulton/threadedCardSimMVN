@@ -1,0 +1,238 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>CardGame.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">threadedcardsim</a> &gt; <a href="index.source.html" class="el_package">me.danielmoulton</a> &gt; <span class="el_source">CardGame.java</span></div><h1>CardGame.java</h1><pre class="source lang-java linenums">package me.danielmoulton;
+
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Scanner;
+import java.util.concurrent.BrokenBarrierException;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.atomic.AtomicInteger;
+
+/**
+ * Represents the game.
+ *
+ * @author Daniel Moulton
+ * @author James Pilcher
+ */
+public class CardGame {
+
+  public static String gameLocation;
+<span class="fc" id="L22">  public static Scanner scanner = new Scanner(System.in);</span>
+  public final int numPlayers;
+  public Card[] cards;
+  public Player[] players;
+  public CardDeck[] decks;
+<span class="fc" id="L27">  public static AtomicInteger winningPlayer = new AtomicInteger();</span>
+  // public static CyclicBarrier barrier;
+
+  /**
+   * Constructor for the CardGame class.
+   *
+   * @param numPlayers the number of players in the game
+   */
+<span class="fc" id="L35">  public CardGame(int numPlayers, Card[] cards) {</span>
+<span class="fc" id="L36">    this.numPlayers = numPlayers;</span>
+<span class="fc" id="L37">    this.cards = cards;</span>
+    // Gets the current date and time in specified format to use as folder for
+    // output files.
+<span class="fc" id="L40">    String time = new SimpleDateFormat(&quot;yyyy.MM.dd.HH.mm.ss&quot;).format(new java.util.Date());</span>
+<span class="fc" id="L41">    gameLocation = &quot;./games/&quot; + time;</span>
+<span class="fc" id="L42">    new File(gameLocation).mkdirs();</span>
+
+<span class="fc" id="L44">    decks = new CardDeck[numPlayers];</span>
+<span class="fc bfc" id="L45" title="All 2 branches covered.">    for (int i = 0; i &lt; decks.length; i++) {</span>
+<span class="fc" id="L46">      decks[i] = new CardDeck(i + 1);</span>
+    }
+<span class="fc" id="L48">    players = new Player[numPlayers];</span>
+<span class="fc bfc" id="L49" title="All 2 branches covered.">    for (int i = 0; i &lt; players.length; i++) {</span>
+<span class="fc" id="L50">      players[i] = new Player(i + 1, decks[i], decks[(i + 1) % numPlayers]);</span>
+    }
+<span class="fc" id="L52">  }</span>
+
+  /**
+   * Deals all of the cards from the pack to players and then decks in round-robin
+   * fashion.
+   */
+  public void dealCards() {
+    // Index of which card we're dealing
+<span class="fc" id="L60">    int cardIndex = 0;</span>
+    // For each loop of giving each player a card
+<span class="fc bfc" id="L62" title="All 2 branches covered.">    for (int cardIndexInHand = 0; cardIndexInHand &lt; 4; cardIndexInHand++) {</span>
+      // For each player in the game
+<span class="fc bfc" id="L64" title="All 2 branches covered.">      for (Player player : players) {</span>
+<span class="fc" id="L65">        player.initialHand(cards[cardIndex], cardIndexInHand);</span>
+<span class="fc" id="L66">        cardIndex++;</span>
+      }
+    }
+<span class="fc bfc" id="L69" title="All 2 branches covered.">    for (int cardIndexInDeck = 0; cardIndexInDeck &lt; 4; cardIndexInDeck++) {</span>
+      // For each deck in the game
+<span class="fc bfc" id="L71" title="All 2 branches covered.">      for (CardDeck deck : decks) {</span>
+<span class="fc" id="L72">        deck.insertCard(cards[cardIndex]);</span>
+<span class="fc" id="L73">        cardIndex++;</span>
+      }
+    }
+<span class="fc" id="L76">  }</span>
+
+  /**
+   * Gets the number of players to play the game from the user
+   * looping until an integer above 1 is entered.
+   *
+   * @return the number of players playing the game
+   */
+  public static int getNumberOfPlayers() {
+<span class="nc" id="L85">    int numPlayers = 0;</span>
+<span class="nc bnc" id="L86" title="All 2 branches missed.">    while (numPlayers &lt; 2) {</span>
+<span class="nc" id="L87">      System.out.println(&quot;Enter the number of players (must be greater than 1): &quot;);</span>
+<span class="nc bnc" id="L88" title="All 2 branches missed.">      if (scanner.hasNextInt()) {</span>
+<span class="nc" id="L89">        numPlayers = scanner.nextInt();</span>
+<span class="nc bnc" id="L90" title="All 2 branches missed.">        if (numPlayers &lt; 2) {</span>
+<span class="nc" id="L91">          System.out.println(&quot;ERROR: Number of players must be greater than 1&quot;);</span>
+        }
+<span class="nc" id="L93">      } else {</span>
+<span class="nc" id="L94">        System.out.println(&quot;ERROR: Input must be an integer greater than 1&quot;);</span>
+<span class="nc" id="L95">        scanner.next();</span>
+      }
+    }
+<span class="nc" id="L98">    return numPlayers;</span>
+  }
+
+  /**
+   * Gets the pack location from the user, looping until a valid pack is found.
+   *
+   * @param numPlayers number of players in the game
+   * @return array of cards
+   */
+  public static Card[] getInputPack(int numPlayers) {
+    String packLocation;
+    Card[] pack;
+<span class="nc" id="L110">    scanner.nextLine();</span>
+<span class="nc" id="L111">    while (true) {</span>
+<span class="nc" id="L112">      System.out.println(&quot;Enter the location of the pack file: &quot;);</span>
+<span class="nc bnc" id="L113" title="All 2 branches missed.">      if (scanner.hasNextLine()) {</span>
+<span class="nc" id="L114">        packLocation = scanner.nextLine();</span>
+<span class="nc bnc" id="L115" title="All 4 branches missed.">        if (packLocation.endsWith(&quot;.txt&quot;) &amp;&amp; isValidPackFile(packLocation, numPlayers)) {</span>
+<span class="nc" id="L116">          pack = readInPack(packLocation, numPlayers);</span>
+<span class="nc" id="L117">          break;</span>
+<span class="nc bnc" id="L118" title="All 2 branches missed.">        } else if (!packLocation.endsWith(&quot;.txt&quot;)) {</span>
+<span class="nc" id="L119">          System.out.println(&quot;ERROR: File must be a .txt file&quot;);</span>
+        }
+      }
+    }
+<span class="nc" id="L123">    scanner.close();</span>
+<span class="nc" id="L124">    return pack;</span>
+  }
+
+  /**
+   * Reads in the pack file at the specified location and returns an array of
+   * cards.
+   *
+   * @param packLocation location of the pack file
+   * @param numPlayers   number of players in the game
+   * @return array of cards
+   */
+  public static Card[] readInPack(String packLocation, int numPlayers) {
+    // Each game has 8n cards, where n is the number of players
+<span class="fc" id="L137">    Card[] pack = new Card[numPlayers * 8];</span>
+    try {
+<span class="fc" id="L139">      File file = new File(packLocation);</span>
+<span class="fc" id="L140">      BufferedReader br = new BufferedReader(new FileReader(file));</span>
+      String line;
+<span class="fc" id="L142">      int i = 0;</span>
+<span class="fc bfc" id="L143" title="All 2 branches covered.">      while ((line = br.readLine()) != null) {</span>
+<span class="fc" id="L144">        pack[i] = new Card(Integer.parseInt(line));</span>
+<span class="fc" id="L145">        i++;</span>
+      }
+<span class="fc" id="L147">      br.close();</span>
+<span class="pc" id="L148">    } catch (IOException e) {</span>
+<span class="nc" id="L149">      e.printStackTrace();</span>
+    }
+<span class="fc" id="L151">    return pack;</span>
+  }
+
+  /**
+   * Takes in a file location and checks if it is a valid pack file.
+   *
+   * @param packLocation location of the pack file
+   * @param numPlayers   number of players in the game
+   * @return true if the file is valid, false otherwise
+   */
+  public static boolean isValidPackFile(String packLocation, int numPlayers) {
+<span class="fc" id="L162">    File file = new File(packLocation);</span>
+<span class="pc bpc" id="L163" title="1 of 4 branches missed.">    if (file.exists() &amp;&amp; file.isFile()) {</span>
+<span class="fc" id="L164">      try (BufferedReader reader = new BufferedReader(new FileReader(packLocation))) {</span>
+        String line;
+<span class="fc" id="L166">        int lineCount = 0;</span>
+<span class="fc bfc" id="L167" title="All 2 branches covered.">        while ((line = reader.readLine()) != null) {</span>
+          try {
+<span class="fc" id="L169">            int num = Integer.parseInt(line);</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">            if (num &lt;= 0) {</span>
+<span class="fc" id="L171">              System.out.println(&quot;ERROR: Pack file contains a non-positive integer&quot;);</span>
+<span class="fc" id="L172">              return false;</span>
+            }
+<span class="fc" id="L174">            lineCount++;</span>
+<span class="fc" id="L175">          } catch (NumberFormatException e) {</span>
+<span class="fc" id="L176">            System.out.println(&quot;ERROR: Pack file contains a non-integer&quot;);</span>
+<span class="fc" id="L177">            return false;</span>
+          }
+        }
+<span class="fc bfc" id="L180" title="All 2 branches covered.">        if (lineCount == numPlayers * 8) {</span>
+<span class="fc" id="L181">          return true;</span>
+        } else {
+<span class="fc" id="L183">          System.out.println(&quot;ERROR: There are not &quot; + 8 * numPlayers + &quot; cards in the pack file&quot;);</span>
+<span class="fc" id="L184">          return false;</span>
+        }
+<span class="nc" id="L186">      } catch (IOException e) {</span>
+<span class="nc" id="L187">        System.out.println(&quot;ERROR: Could not read pack file&quot;);</span>
+<span class="nc" id="L188">        return false;</span>
+      }
+    } else {
+<span class="fc" id="L191">      System.out.println(&quot;ERROR: Pack file does not exist&quot;);</span>
+<span class="fc" id="L192">      return false;</span>
+    }
+  }
+
+  /**
+   * Starts the threads of each player.
+   */
+  public void startPlayerThreads() {
+<span class="nc bnc" id="L200" title="All 2 branches missed.">    for (Player player : players) {</span>
+<span class="nc" id="L201">      new Thread(player).start();</span>
+    }
+<span class="nc" id="L203">  }</span>
+
+  // /**
+  //  * Called once every player has called await on the barrier, releasing the barrier.
+  //  *
+  //  * @throws InterruptedException
+  //  * @throws BrokenBarrierException
+  //  */
+  // public void releaseBarrier() throws InterruptedException,
+  //     BrokenBarrierException {
+  //   barrier.await();
+  // }
+
+  /**
+   * Main method called when starting the game.
+   *
+   * @param args the command line arguments
+   * @throws InterruptedException   if the thread is interrupted
+   * @throws BrokenBarrierException if the barrier is broken
+   */
+  public static void main(String[] args) throws InterruptedException, BrokenBarrierException {
+<span class="nc" id="L224">    System.out.println(&quot;Welcome to the Card Game!&quot;);</span>
+<span class="nc" id="L225">    int numPlayers = getNumberOfPlayers();</span>
+    // barrier = new CyclicBarrier(numPlayers + 1);
+<span class="nc" id="L227">    Card[] cards = getInputPack(numPlayers);</span>
+<span class="nc" id="L228">    CardGame game = new CardGame(numPlayers, cards);</span>
+<span class="nc" id="L229">    System.out.println(&quot;Dealing cards...&quot;);</span>
+<span class="nc" id="L230">    game.dealCards();</span>
+<span class="nc bnc" id="L231" title="All 2 branches missed.">    for (Player player : game.players) {</span>
+<span class="nc" id="L232">      new Thread(player).start();</span>
+<span class="nc" id="L233">      System.out.println(player.getPlayerName() + &quot; has been dealt cards &quot; + player.handToString());</span>
+    }
+    // game.releaseBarrier();  
+<span class="nc" id="L236">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>

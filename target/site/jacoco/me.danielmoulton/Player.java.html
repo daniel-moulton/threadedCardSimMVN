@@ -1,0 +1,260 @@
+<?xml version="1.0" encoding="UTF-8"?><!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd"><html xmlns="http://www.w3.org/1999/xhtml" lang="en"><head><meta http-equiv="Content-Type" content="text/html;charset=UTF-8"/><link rel="stylesheet" href="../jacoco-resources/report.css" type="text/css"/><link rel="shortcut icon" href="../jacoco-resources/report.gif" type="image/gif"/><title>Player.java</title><link rel="stylesheet" href="../jacoco-resources/prettify.css" type="text/css"/><script type="text/javascript" src="../jacoco-resources/prettify.js"></script></head><body onload="window['PR_TAB_WIDTH']=4;prettyPrint()"><div class="breadcrumb" id="breadcrumb"><span class="info"><a href="../jacoco-sessions.html" class="el_session">Sessions</a></span><a href="../index.html" class="el_report">threadedcardsim</a> &gt; <a href="index.source.html" class="el_package">me.danielmoulton</a> &gt; <span class="el_source">Player.java</span></div><h1>Player.java</h1><pre class="source lang-java linenums">package me.danielmoulton;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.PrintStream;
+import java.util.LinkedList;
+import java.util.Queue;
+import java.util.concurrent.BrokenBarrierException;
+
+/**
+ * Represents a player in the game.
+ *
+ * @author Daniel Moulton
+ * @author James Pilcher
+ */
+public class Player implements Runnable {
+
+  private final int playerNumber;
+  private final String playerName;
+  private Card[] hand;
+  private PrintStream outputter;
+<span class="fc" id="L22">  private static final Object OBJECT_LOCK = new Object();</span>
+<span class="fc" id="L23">  private Queue&lt;Card&gt; discardables = new LinkedList&lt;Card&gt;();</span>
+  private CardDeck deckDrawnFrom;
+  private CardDeck deckInsertedTo;
+
+  /**
+   * Constructor for the Player class.
+   *
+   * @param playerNumber the number of the player
+   * @param deckDrawnFrom the deck the player draws from
+   * @param deckInsertedTo the deck the player inserts into
+   */
+<span class="fc" id="L34">  public Player(int playerNumber, CardDeck deckDrawnFrom, CardDeck deckInsertedTo) {</span>
+<span class="fc" id="L35">    this.playerNumber = playerNumber;</span>
+<span class="fc" id="L36">    this.playerName = &quot;Player &quot; + playerNumber;</span>
+<span class="fc" id="L37">    this.hand = new Card[4];</span>
+<span class="fc" id="L38">    this.deckDrawnFrom = deckDrawnFrom;</span>
+<span class="fc" id="L39">    this.deckInsertedTo = deckInsertedTo;</span>
+    try {
+<span class="fc" id="L41">      this.outputter = new PrintStream(new File(CardGame.gameLocation </span>
+<span class="fc" id="L42">      + &quot;/player&quot; + playerNumber + &quot;_output.txt&quot;));</span>
+<span class="pc" id="L43">    } catch (FileNotFoundException e) {</span>
+<span class="nc" id="L44">      e.printStackTrace();</span>
+    }
+<span class="fc" id="L46">  }</span>
+
+  /**
+   * Inserts the starting cards into the player's hand.
+   *
+   * @param card the card to add to the player's hand
+   * @param handPosition the position in the hand to add the card
+   */
+  public void initialHand(Card card, int handPosition) {
+<span class="fc" id="L55">    hand[handPosition] = card;</span>
+<span class="fc bfc" id="L56" title="All 2 branches covered.">    if (handPosition == 3) {</span>
+      try {
+<span class="fc" id="L58">        appendToFile(playerName + &quot; initial hand is &quot; + handToString());</span>
+<span class="pc" id="L59">      } catch (NullPointerException e)</span>
+      {
+<span class="nc" id="L61">        e.printStackTrace();</span>
+      }
+      // Check if the player has won initially.
+<span class="fc bfc" id="L64" title="All 2 branches covered.">      if (hasWon()) {</span>
+<span class="fc" id="L65">        playerWon();</span>
+<span class="fc" id="L66">      } else {</span>
+<span class="fc" id="L67">        findDiscardables();</span>
+      }
+    }
+<span class="fc" id="L70">  }</span>
+
+  /**
+   * Checks each card in the hand and if the denomination is not equal to the player's number
+   * the card is added to the queue of discardables which contains all cards in the hand that can 
+   * be discarded in future turns.
+   */
+  public void findDiscardables() {
+<span class="fc bfc" id="L78" title="All 2 branches covered.">    for (int i = 0; i &lt; hand.length; i++) {</span>
+<span class="fc bfc" id="L79" title="All 2 branches covered.">      if (hand[i].getCardValue() != playerNumber) {</span>
+<span class="fc" id="L80">        discardables.add(hand[i]);</span>
+      }
+    }
+<span class="fc" id="L83">  }</span>
+
+  public Queue&lt;Card&gt; getDiscardables() {
+<span class="fc" id="L86">    return discardables;</span>
+  }
+
+  /**
+   * Appends the given string to the player's output file.
+   *
+   * @param output string to append
+   */
+  public void appendToFile(String output) {
+<span class="fc" id="L95">    outputter.println(output);</span>
+<span class="fc" id="L96">  }</span>
+
+  /**
+   * Returns the player's hand as a string of card values.
+   *
+   * @return string of card values
+   */
+  public String handToString() {
+<span class="fc" id="L104">    String stringHand = &quot;&quot;;</span>
+<span class="fc bfc" id="L105" title="All 2 branches covered.">    for (Card card : hand) {</span>
+<span class="pc bpc" id="L106" title="1 of 2 branches missed.">      if (card != null) {</span>
+<span class="fc" id="L107">        stringHand += card.getCardValue() + &quot; &quot;;</span>
+      }
+    }
+<span class="fc" id="L110">    return stringHand;</span>
+  }
+
+  /**
+   * Draws the card at the top of the previous deck and appends to the player's output file
+   * the card they drew and from which deck.
+   *
+   * @return the card that was drawn
+   */
+  public Card drawCard() {
+<span class="nc" id="L120">    Card card = deckDrawnFrom.drawCard();</span>
+<span class="nc" id="L121">    appendToFile(playerName + &quot; draws a &quot; + card.getCardValue() + &quot; from deck &quot;</span>
+<span class="nc" id="L122">        + deckDrawnFrom.getDeckNumber());</span>
+<span class="nc" id="L123">    return card;</span>
+  }
+
+  /**
+   * Gets the next card to discard from the queue of discardables and removes that card from 
+   * the player's hand. Then inserts the removed card into the next deck and appends to the
+   * player's output file the card they discarded and into which deck.
+   */
+  public void removeMostDiscardable() {
+<span class="nc" id="L132">    Card card = discardables.remove();</span>
+<span class="nc bnc" id="L133" title="All 2 branches missed.">    for (int i = 0; i &lt; hand.length; i++) {</span>
+<span class="nc bnc" id="L134" title="All 2 branches missed.">      if (hand[i] == card) {</span>
+<span class="nc" id="L135">        hand[i] = null;</span>
+      }
+    }
+<span class="nc" id="L138">    deckInsertedTo.insertCard(card);</span>
+<span class="nc" id="L139">    appendToFile(playerName + &quot; discards a &quot; + card.getCardValue() + &quot; to deck &quot;</span>
+<span class="nc" id="L140">        + deckInsertedTo.getDeckNumber());</span>
+<span class="nc" id="L141">  }</span>
+
+  /**
+   * Loops through the player's hand and inserts the card drawn into the first empty slot.
+   * Then checks if the card can be discarded or not in future turns.
+   * And finally appends the player's current hand to their output file.
+   *
+   * @param drawnCard the drawn card to be inserted into the hand
+   */
+  private void updateHand(Card drawnCard) {
+<span class="nc bnc" id="L151" title="All 2 branches missed.">    for (int i = 0; i &lt; hand.length; i++) {</span>
+<span class="nc bnc" id="L152" title="All 2 branches missed.">      if (hand[i] == null) {</span>
+<span class="nc" id="L153">        hand[i] = drawnCard;</span>
+<span class="nc bnc" id="L154" title="All 2 branches missed.">        if (drawnCard.getCardValue() != playerNumber) {</span>
+<span class="nc" id="L155">          discardables.add(drawnCard);</span>
+        }
+<span class="nc" id="L157">        break;</span>
+      }
+    }
+<span class="nc" id="L160">    appendToFile(playerName + &quot; current hand is &quot; + handToString());</span>
+<span class="nc" id="L161">  }</span>
+
+  /**
+   * Checks a player's hand to see if they have won by having four cards of the same value.
+   *
+   * @return true if the player has won, false otherwise
+   */
+  private Boolean hasWon() {
+<span class="fc bfc" id="L169" title="All 2 branches covered.">    for (Card card : hand) {</span>
+<span class="fc bfc" id="L170" title="All 2 branches covered.">      if (card.getCardValue() != (hand[0].getCardValue())) {</span>
+<span class="fc" id="L171">        return false;</span>
+      }
+    }
+<span class="fc" id="L174">    return true;</span>
+  }
+
+  /**
+   * Getter for the name of the player.
+   *
+   * @return the name of the player
+   */
+  public String getPlayerName() {
+<span class="fc" id="L183">    return playerName;</span>
+  }
+
+  /**
+   * When they win the game, sets the atomic variable winning player to winning player's number.
+   * Then wakes up all threads as the game is now over and prints to console which player won.
+   */
+  public void playerWon() {
+<span class="fc" id="L191">    CardGame.winningPlayer.set(playerNumber);</span>
+<span class="fc" id="L192">    synchronized (OBJECT_LOCK) {</span>
+<span class="fc" id="L193">      OBJECT_LOCK.notifyAll();</span>
+    }
+<span class="fc" id="L195">    System.out.println(playerName + &quot; wins!&quot;);</span>
+<span class="fc" id="L196">  }</span>
+
+  public int getHandSize(){
+<span class="nc" id="L199">    return hand.length;</span>
+  }
+
+  @Override
+  public void run() {
+    // try {
+    //   CardGame.barrier.await();
+    // } catch (InterruptedException e1) {
+    //   e1.printStackTrace();
+    // } catch (BrokenBarrierException e1) {
+    //   e1.printStackTrace();
+    // }
+<span class="nc bnc" id="L211" title="All 2 branches missed.">    while (CardGame.winningPlayer.get() == 0) {</span>
+<span class="nc bnc" id="L212" title="All 2 branches missed.">      if (hasWon()) {</span>
+<span class="nc" id="L213">        playerWon();</span>
+<span class="nc" id="L214">        break;</span>
+      }
+      // Player can go as long as the deck they draw from is not empty and no one has won the game.
+<span class="nc bnc" id="L217" title="All 4 branches missed.">      while (deckDrawnFrom.getDeckLength() == 0 &amp;&amp; CardGame.winningPlayer.get() == 0) {</span>
+        try {
+<span class="nc" id="L219">          synchronized (OBJECT_LOCK) {</span>
+<span class="nc" id="L220">            System.out.println(playerName + &quot; waiting for deck &quot;</span>
+<span class="nc" id="L221">                + deckDrawnFrom.getDeckNumber() + &quot; to be filled&quot;);</span>
+<span class="nc" id="L222">            OBJECT_LOCK.wait();</span>
+          }
+<span class="nc" id="L224">        } catch (InterruptedException e) {</span>
+<span class="nc" id="L225">          throw new RuntimeException(e);</span>
+        }
+      }
+<span class="nc bnc" id="L228" title="All 2 branches missed.">      if (CardGame.winningPlayer.get() != 0) {</span>
+<span class="nc" id="L229">        break;</span>
+      }
+<span class="nc" id="L231">      Card drawnCard = drawCard();</span>
+<span class="nc" id="L232">      removeMostDiscardable();</span>
+<span class="nc" id="L233">      updateHand(drawnCard);</span>
+<span class="nc bnc" id="L234" title="All 2 branches missed.">      if (hasWon()) {</span>
+<span class="nc" id="L235">        playerWon();</span>
+<span class="nc" id="L236">        break;</span>
+      }
+<span class="nc" id="L238">      synchronized (OBJECT_LOCK) {</span>
+<span class="nc" id="L239">        OBJECT_LOCK.notifyAll();</span>
+      }
+    }
+<span class="nc" id="L242">    int winnerNumber = CardGame.winningPlayer.get();</span>
+<span class="nc bnc" id="L243" title="All 2 branches missed.">    if (winnerNumber == playerNumber) {</span>
+<span class="nc" id="L244">      appendToFile(playerName + &quot; wins&quot;);</span>
+<span class="nc" id="L245">    } else {</span>
+<span class="nc" id="L246">      appendToFile(&quot;Player &quot; + winnerNumber + &quot; has informed Player &quot; + playerNumber </span>
+<span class="nc" id="L247">          + &quot; that Player &quot; + winnerNumber + &quot; has won&quot;);</span>
+    }
+<span class="nc" id="L249">    appendToFile(playerName + &quot; exits&quot;);</span>
+
+<span class="nc bnc" id="L251" title="All 2 branches missed.">    if (winnerNumber == playerNumber) {</span>
+<span class="nc" id="L252">      appendToFile(playerName + &quot; final hand: &quot; + handToString());</span>
+<span class="nc" id="L253">    } else {</span>
+<span class="nc" id="L254">      appendToFile(playerName + &quot; hand: &quot; + handToString());</span>
+    }
+<span class="nc" id="L256">    deckDrawnFrom.printContentsToFile();</span>
+<span class="nc" id="L257">    outputter.close();</span>
+<span class="nc" id="L258">  }</span>
+}
+</pre><div class="footer"><span class="right">Created with <a href="http://www.jacoco.org/jacoco">JaCoCo</a> 0.8.4.201905082037</span></div></body></html>
